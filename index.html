@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Czy dziś w nas walnie? — Asteroidy blisko Ziemi</title>
+<meta name="description" content="Sprawdź, które asteroidy przelatują blisko Ziemi w najbliższych dniach. Dane NASA w czasie rzeczywistym. Dinozaury trzymają kciuki.">
+<meta name="author" content="Paweł Lewiński">
+<meta name="theme-color" content="#070b14">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Outfit:wght@300;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #070b14;
+  --ground: #1a2612;
+  --ground-light: #2d3d1f;
+  --safe: #22c55e;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --accent: #f59e0b;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --card: #0f1629;
+  --card-border: rgba(255,255,255,0.06);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Starfield — 3 layers: dim, medium, bright ── */
+#starfield { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+#starfield .layer { position: absolute; border-radius: 50%; background: white; }
+#starfield .dim    { width: 1px; height: 1px; }
+#starfield .med    { width: 1.5px; height: 1.5px; }
+#starfield .bright { width: 2px; height: 2px; }
+@keyframes twinkle { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* ── Comets — JS-generated for correct tail alignment ── */
+.comet {
+  position: fixed;
+  z-index: 1;
+  pointer-events: none;
+  height: 6px;
+  border-radius: 3px 50% 50% 3px;
+  opacity: 0;
+}
+
+.comet::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 25%, rgba(var(--comet-color), 0.8) 50%, transparent 100%);
+  box-shadow: 0 0 10px 4px rgba(var(--comet-color), 0.6), 0 0 25px 8px rgba(var(--comet-color), 0.25);
+}
+
+/* ── Hero ── */
+.hero {
+  position: relative;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem 6rem;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(to top, var(--ground), transparent);
+  pointer-events: none;
+}
+
+.hero h1 {
+  font-family: 'Dela Gothic One', cursive;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  line-height: 1.15;
+  color: #fff;
+  margin-bottom: 0.75rem;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 40px rgba(245,158,11,0.3);
+}
+
+.hero h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.hero-sub {
+  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  font-weight: 300;
+  color: var(--muted);
+  max-width: 500px;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 1.5rem;
+}
+
+.hero-dino-comment {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  font-style: italic;
+  position: relative;
+  z-index: 2;
+  max-width: 500px;
+}
+
+/* ── Dinosaur scene ── */
+.dino-scene {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  z-index: 1;
+}
+
+.dino-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to top, var(--ground) 60%, var(--ground-light) 100%);
+}
+
+.dino-scene svg {
+  position: absolute;
+  bottom: 20px;
+}
+
+.dino-trex {
+  left: 8%;
+  width: 100px;
+  height: 110px;
+  opacity: 0.7;
+  animation: dino-look 6s ease-in-out infinite;
+}
+
+.dino-bronto {
+  left: 55%;
+  width: 140px;
+  height: 130px;
+  opacity: 0.6;
+  animation: dino-look 8s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.dino-trice {
+  right: 10%;
+  width: 90px;
+  height: 70px;
+  opacity: 0.65;
+  animation: dino-look 7s ease-in-out infinite;
+  animation-delay: 4s;
+}
+
+.dino-ptero {
+  position: absolute;
+  top: 30%;
+  right: 20%;
+  width: 60px;
+  height: 40px;
+  opacity: 0.35;
+  animation: ptero-fly 12s ease-in-out infinite;
+}
+
+@keyframes dino-look {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes ptero-fly {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-30px, -15px) rotate(-3deg); }
+  50% { transform: translate(20px, -25px) rotate(2deg); }
+  75% { transform: translate(-10px, -10px) rotate(-1deg); }
+}
+
+/* Palm trees */
+.palm {
+  position: absolute;
+  bottom: 30px;
+  opacity: 0.4;
+}
+.palm-1 { left: 30%; width: 40px; height: 80px; }
+.palm-2 { right: 30%; width: 35px; height: 70px; transform: scaleX(-1); }
+
+/* ── Alert bar ── */
+#alert-bar {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 20px;
+  font-family: 'Dela Gothic One', cursive;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  letter-spacing: 1px;
+  color: #fff;
+  background: linear-gradient(135deg, #16a34a, #22c55e, #16a34a);
+  background-size: 200% 200%;
+  animation: shimmer-bar 4s ease-in-out infinite;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+#alert-bar.danger {
+  background: linear-gradient(135deg, #dc2626, #ef4444, #dc2626);
+  background-size: 200% 200%;
+  animation: shimmer-bar 4s ease-in-out infinite, pulse-alert 2s ease-in-out infinite;
+}
+
+#alert-bar.warn {
+  background: linear-gradient(135deg, #d97706, #f59e0b, #d97706);
+  background-size: 200% 200%;
+}
+
+#alert-bar .alert-sub {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+@keyframes shimmer-bar {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes pulse-alert {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+/* ── Countdown ── */
+.countdown-section {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background: linear-gradient(to bottom, var(--ground), var(--bg) 40%);
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.countdown-name {
+  font-family: 'Dela Gothic One', cursive;
+  font-size: 1.2rem;
+  color: var(--accent);
+  margin: 6px 0;
+}
+
+.countdown-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 2px;
+}
+
+.countdown-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.cd-stat {
+  text-align: center;
+}
+
+.cd-stat .cd-stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.cd-stat .cd-stat-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.cd-stat.dist .cd-stat-value { color: var(--accent); }
+.cd-stat.speed .cd-stat-value { color: #38bdf8; }
+.cd-stat.size .cd-stat-value { color: #a78bfa; }
+
+/* ── Asteroid list ── */
+.asteroids-section {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2rem;
+}
+
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.asteroid-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 10px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.asteroid-card:hover {
+  border-color: rgba(245,158,11,0.2);
+  transform: translateY(-1px);
+}
+
+.asteroid-card.threat-safe {
+  background: linear-gradient(135deg, rgba(34,197,94,0.18), rgba(34,197,94,0.06));
+  border-left: 3px solid rgba(34,197,94,0.6);
+}
+
+.asteroid-card.threat-medium {
+  background: linear-gradient(135deg, rgba(250,204,21,0.18), rgba(250,204,21,0.06));
+  border-left: 3px solid rgba(250,204,21,0.6);
+}
+
+.asteroid-card.threat-danger {
+  background: linear-gradient(135deg, rgba(248,80,80,0.20), rgba(248,80,80,0.07));
+  border-left: 3px solid rgba(248,80,80,0.65);
+}
+
+.asteroid-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.75rem;
+}
+
+.asteroid-icon {
+  font-size: 1.6rem;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(245,158,11,0.08);
+  flex-shrink: 0;
+}
+
+.asteroid-header h3 {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.asteroid-header .date {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.asteroid-header .hazard-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(239,68,68,0.12);
+  color: var(--danger);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.asteroid-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-cell {
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  padding: 0.6rem 0.5rem;
+  text-align: center;
+}
+
+.stat-cell .stat-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.stat-cell .stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.stat-cell .stat-sub {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.stat-cell.s-dist .stat-value { color: var(--accent); }
+.stat-cell.s-speed .stat-value { color: #38bdf8; }
+.stat-cell.s-size .stat-value { color: #a78bfa; }
+
+.cd-stat .cd-stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.cd-stat .cd-stat-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── Fun facts ── */
+.funfact-section {
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
+  margin: 1rem auto 0;
+  padding: 0 1.5rem 2rem;
+  text-align: center;
+}
+
+.funfact-box {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.funfact-box .dino-emoji {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.funfact-box p {
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.funfact-box strong {
+  color: var(--text);
+}
+
+/* ── Status bar ── */
+.status-bar {
+  text-align: center;
+  padding: 10px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  position: relative;
+  z-index: 1;
+}
+
+.status-bar .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--safe);
+  border-radius: 50%;
+  margin-right: 4px;
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Loading ── */
+#loading {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: opacity 0.5s;
+}
+
+#loading.hidden { opacity: 0; pointer-events: none; }
+
+.loader-asteroid {
+  font-size: 2.5rem;
+  animation: spin-asteroid 2s linear infinite;
+}
+
+@keyframes spin-asteroid {
+  to { transform: rotate(360deg); }
+}
+
+#loading p {
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* ── Animations ── */
+.asteroid-card {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeUp 0.4s ease forwards;
+}
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .hero { min-height: 350px; padding: 2.5rem 1rem 5rem; }
+  .dino-trex { width: 70px; height: 77px; left: 3%; }
+  .dino-bronto { width: 100px; height: 93px; }
+  .dino-trice { width: 65px; height: 51px; right: 3%; }
+  .dino-ptero { width: 40px; height: 27px; }
+  .asteroid-stats-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .stat-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+  }
+  .stat-cell .stat-label { margin-bottom: 0; }
+  .stat-cell .stat-sub { margin-top: 0; margin-left: 6px; }
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loader-asteroid">☄️</div>
+  <p id="loading-text">Skanowanie kosmosu...</p>
+</div>
+
+<div id="starfield"></div>
+
+<div id="comet-container"></div>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>Czy dziś w nas <em>walnie</em>?</h1>
+  <p class="hero-sub">Asteroidy przelatujące blisko Ziemi w najbliższych 7 dniach. Dane NASA w czasie rzeczywistym.</p>
+  <div class="hero-dino-comment" id="dino-comment">🦕 „66 milionów lat bez incydentu. Na razie."</div>
+
+  <div class="dino-scene">
+    <div class="dino-ground"></div>
+  </div>
+</section>
+
+<!-- Alert -->
+<div id="alert-bar">
+  Skanowanie...
+</div>
+
+<!-- Countdown -->
+<div class="countdown-section">
+  <div class="countdown-label" id="cd-label">Najbliższy przelot</div>
+  <div class="countdown-name" id="cd-name">—</div>
+  <div class="countdown-time" id="cd-time">--:--:--</div>
+  <div class="countdown-stats" id="cd-stats"></div>
+</div>
+
+<!-- Asteroid list -->
+<div class="asteroids-section">
+  <div class="section-title" id="list-title">Asteroidy w najbliższych 7 dniach</div>
+  <div id="asteroid-list"></div>
+</div>
+
+<!-- Fun fact -->
+<div class="funfact-section">
+  <div class="funfact-box" id="funfact">
+    <div class="dino-emoji">🦖</div>
+    <p>Ładowanie mądrości dinozaurów...</p>
+  </div>
+</div>
+
+<!-- Status -->
+<div class="status-bar">
+  <span class="dot"></span>
+  <span id="status-text">Łączenie z NASA...</span>
+</div>
+
+<script>
+// ── STARFIELD ──
+(function() {
+  const sf = document.getElementById('starfield');
+  const stars = 320;
+  for (let i = 0; i < stars; i++) {
+    const d = document.createElement('div');
+    d.className = 'layer ' + (i < 200 ? 'dim' : i < 280 ? 'med' : 'bright');
+    d.style.left = (Math.random() * 100) + '%';
+    d.style.top = (Math.random() * 100) + '%';
+    d.style.opacity = (0.2 + Math.random() * 0.7).toFixed(2);
+    // kilka gwiazd lekko migocze
+    if (Math.random() < 0.15) {
+      d.style.animation = `twinkle ${2 + Math.random() * 4}s ease-in-out infinite`;
+      d.style.animationDelay = (Math.random() * 5) + 's';
+    }
+    sf.appendChild(d);
+  }
+})();
+
+// ── COMETS — tail always opposite to flight direction ──
+(function() {
+  const comets = [
+    { startX: -5, startY: 8,  endX: 110, endY: 55, dur: 4,  delay: 2,  len: 400, h: 6, color: '245,158,11',  period: 10 },
+    { startX: -3, startY: 25, endX: 105, endY: 50, dur: 3.5, delay: 8,  len: 300, h: 5, color: '56,189,248',  period: 12 },
+    { startX: 70, startY: -3, endX: 30,  endY: 95, dur: 3,  delay: 15, len: 250, h: 4, color: '245,158,11',  period: 14 },
+    { startX: -4, startY: 40, endX: 108, endY: 55, dur: 5,  delay: 22, len: 450, h: 6, color: '167,139,250', period: 16 },
+  ];
+
+  const container = document.getElementById('comet-container');
+
+  comets.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'comet';
+
+    // Kąt lotu z wektora (dx, dy) — w vw/vh, przeliczone na px dla proporcji
+    const dx = (c.endX - c.startX) * window.innerWidth / 100;
+    const dy = (c.endY - c.startY) * window.innerHeight / 100;
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+    el.style.width = c.len + 'px';
+    el.style.height = c.h + 'px';
+    el.style.left = c.startX + 'vw';
+    el.style.top = c.startY + 'vh';
+    el.style.transform = `rotate(${angle}deg)`;
+    el.style.transformOrigin = 'right center';
+    // Gradient: przezroczysty (ogon) → kolor → biała główka (prawy koniec = przód)
+    el.style.background = `linear-gradient(90deg, transparent 0%, rgba(${c.color},0.03) 15%, rgba(${c.color},0.2) 60%, rgba(${c.color},0.6) 85%, #fff 100%)`;
+    // glow na kulce ustawiany przez CSS custom property
+    el.style.setProperty('--comet-color', c.color);
+
+    // Animacja: translate wzdłuż wektora lotu
+    const name = `comet_fly_${i}`;
+    const distX = c.endX - c.startX;
+    const distY = c.endY - c.startY;
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes ${name} {
+        0% { translate: 0 0; opacity: 0; }
+        3% { opacity: 1; }
+        ${Math.round(60 * c.dur / c.period * 10)}% { translate: ${distX}vw ${distY}vh; opacity: 0; }
+        100% { translate: ${distX}vw ${distY}vh; opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+    el.style.animation = `${name} ${c.period}s ease-in infinite ${c.delay}s`;
+
+    container.appendChild(el);
+  });
+})();
+
+// ── I18N ──
+const isPl = navigator.language.startsWith('pl');
+document.documentElement.lang = isPl ? 'pl' : 'en';
+const T = {
+  pageTitle: isPl ? 'Czy dziś w nas walnie? — Asteroidy blisko Ziemi' : 'Will we get hit today? — Near-Earth Asteroids',
+  loading: isPl ? 'Skanowanie kosmosu...' : 'Scanning the cosmos...',
+  title: isPl ? 'Czy dziś w nas walnie?' : 'Will we get hit today?',
+  titleEm: isPl ? 'walnie' : 'hit',
+  sub: isPl ? 'Asteroidy przelatujące blisko Ziemi w najbliższych 7 dniach. Dane NASA w czasie rzeczywistym.' : 'Asteroids passing near Earth in the next 7 days. Real-time NASA data.',
+  nextPass: isPl ? 'Najbliższy przelot' : 'Next flyby',
+  listTitle: isPl ? 'Asteroidy w najbliższych 7 dniach' : 'Asteroids in the next 7 days',
+  safe: isPl ? 'DZIŚ JESTEŚMY BEZPIECZNI' : 'WE ARE SAFE TODAY',
+  safeSub: isPl ? 'Żadna asteroida nie uderzy w Ziemię. Dinozaury mogą spać spokojnie.' : 'No asteroid will hit Earth. Dinosaurs can sleep well.',
+  warnTitle: isPl ? 'BLISKO, ALE SPOKOJNIE' : 'CLOSE, BUT CALM DOWN',
+  warnSub: isPl ? 'Potencjalnie niebezpieczna asteroida w okolicy. Ale NASA pilnuje.' : 'Potentially hazardous asteroid nearby. But NASA is watching.',
+  hazardous: isPl ? 'Potencjalnie niebezpieczna' : 'Potentially hazardous',
+  distance: isPl ? 'odległość' : 'distance',
+  moonTimes: isPl ? '× dalej niż Księżyc' : '× farther than the Moon',
+  closerThanMoon: isPl ? '× bliżej niż Księżyc!' : '× closer than the Moon!',
+  speed: isPl ? 'prędkość' : 'speed',
+  diameter: isPl ? 'średnica' : 'diameter',
+  days: isPl ? 'd' : 'd',
+  hours: isPl ? 'h' : 'h',
+  min: isPl ? 'min' : 'min',
+  sec: isPl ? 's' : 's',
+  errorTitle: isPl ? 'NASA nie odpowiada' : 'NASA is not responding',
+  errorSub: isPl ? 'Spróbuj odświeżyć stronę za chwilę.' : 'Try refreshing in a moment.',
+};
+
+// ── SIZE COMPARISONS ──
+// Ref: samochód ~4m, autobus ~12m, boisko ~105m, stadion ~300m
+function sizeCompare(minM, maxM) {
+  const avg = (minM + maxM) / 2;
+  if (avg < 2) return isPl ? ['kamyk z kosmosu','🪨'] : ['space pebble','🪨'];
+  if (avg < 8) return isPl ? [`${Math.round(avg/4)}× samochód`,'🚗'] : [`${Math.round(avg/4)}× car`,'🚗'];
+  if (avg < 50) return isPl ? [`${Math.round(avg/12)}× autobus`,'🚌'] : [`${Math.round(avg/12)}× bus`,'🚌'];
+  if (avg < 200) return isPl ? [`${(avg/105).toFixed(1)}× boisko piłkarskie`,'⚽'] : [`${(avg/105).toFixed(1)}× football pitch`,'⚽'];
+  if (avg < 600) return isPl ? [`${(avg/300).toFixed(1)}× stadion`,'🏟️'] : [`${(avg/300).toFixed(1)}× stadium`,'🏟️'];
+  if (avg < 2000) return isPl ? [`${(avg/300).toFixed(0)}× stadion`,'⛰️'] : [`${(avg/300).toFixed(0)}× stadium`,'⛰️'];
+  return isPl ? [`${(avg/1000).toFixed(1)} km · dinozaury pamiętają...`,'☄️'] : [`${(avg/1000).toFixed(1)} km · dinosaurs remember...`,'☄️'];
+}
+
+function distLabelShort(distLD) {
+  if (distLD < 1) return `${(1/distLD).toFixed(1)}×`;
+  return `${distLD.toFixed(1)}×`;
+}
+
+function distLabelUnit(distLD) {
+  if (distLD < 1) return isPl ? 'bliżej niż Księżyc!' : 'closer than Moon!';
+  return isPl ? 'dalej niż Księżyc' : 'farther than Moon';
+}
+
+// ── DINO COMMENTS ──
+const DINO_COMMENTS_SAFE = isPl ? [
+  '🦕 „66 milionów lat bez incydentu. Na razie."',
+  '🦖 „Sprawdzam codziennie. Dla pewności."',
+  '🦕 „Wolę wiedzieć zawczasu, wierz mi."',
+  '🦖 „Ostatnim razem nie mieliśmy tej apki."',
+  '🦕 „Spokojnie, NASA pilnuje. My nie mieliśmy NASA."',
+  '🦖 „Jak nie walnie, to idziemy na paprocie."',
+  '🦕 „Przyjaciel Trike mówi że dziś spokój. Ufam mu."',
+  '🦖 „Na pewno przeleci obok."',
+  '🦕 „Statystycznie? Bezpieczni. Ale statystyka nas zabiła."',
+  '🦖 „Znowu fałszywy alarm. Jak zwykle. Jak wtedy."',
+  '🦕 „Patrz jak ładnie leci. Ładnie leciał też ten ostatni."',
+  '🦖 „Przynajmniej wiemy, z której strony przyleci."',
+  '🦕 „Dziś tylko przelot turystyczny. Bez lądowania."',
+  '🦖 „NASA mówi że OK. A co NASA wie o dinozaurach?"',
+  '🦕 „Jeszcze jeden spokojny dzień w Mezozoiku... znaczy, w 2026."',
+  '🦖 „Nie martwcie się. To nie my powinniśmy się martwić. My już nie żyjemy."',
+] : [
+  '🦕 "66 million years without incident. So far."',
+  '🦖 "I check every day. Just to be safe."',
+  '🦕 "I prefer to know in advance, trust me."',
+  '🦖 "Last time we didn\'t have this app."',
+  '🦕 "Relax, NASA is watching. We didn\'t have NASA."',
+  '🦖 "If nothing hits, we\'re going for ferns."',
+  '🦖 "It\'ll definitely fly past. Definitely."',
+  '🦕 "Statistically? Safe. But statistics killed us."',
+  '🦖 "Another false alarm. As usual. Like that one time."',
+  '🦕 "Look how nicely it flies. The last one flew nicely too."',
+  '🦖 "At least we know which direction it\'s coming from."',
+  '🦕 "Just a flyby today. No landing scheduled."',
+  '🦖 "NASA says OK. But what does NASA know about dinosaurs?"',
+  '🦕 "Another calm day in the Mesozoic... I mean, 2026."',
+  '🦖 "Don\'t worry. We shouldn\'t worry. We\'re already dead."',
+];
+
+const DINO_COMMENTS_CLOSE = isPl ? [
+  '🦖 „To mi się nie podoba."',
+  '🦕 „Czy ktoś sprawdził matematykę?!"',
+  '🦖 „Mam déjà vu i nie lubię tego."',
+  '🦕 „Paczka ewakuacyjna spakowana."',
+  '🦖 „...i dlatego jestem wymarły."',
+  '🦕 „Mówili że przeleci obok. Mówili."',
+  '🦖 „Kiedyś to było 10 km. Ten jest mniejszy. Chyba."',
+  '🦕 „Trike, pamiętasz ten jasny punkt 66 mln lat temu? No właśnie."',
+  '🦖 „Szybko, kto umie kopać norę?"',
+  '🦕 „Spokojnie. Spokojnie. SPOKOJNIE."',
+] : [
+  '🦖 "I don\'t like this."',
+  '🦕 "Did anyone double-check the math?!"',
+  '🦖 "I\'m having déjà vu and I don\'t like it."',
+  '🦕 "Emergency bag packed."',
+  '🦖 "...and that\'s why I\'m extinct."',
+  '🦕 "They said it would fly past. They said."',
+  '🦖 "That one was 10 km. This one\'s smaller. Probably."',
+  '🦕 "Trike, remember that bright dot 66M years ago? Exactly."',
+  '🦖 "Quick, who can dig a burrow?"',
+  '🦕 "Calm down. Calm down. CALM DOWN."',
+];
+
+// ── FUN FACTS ──
+const FUN_FACTS = isPl ? [
+  { emoji: '🦖', text: 'Asteroida, która zabiła dinozaury (<strong>Chicxulub</strong>) miała ~10 km średnicy i uderzyła z prędkością 20 km/s. Energia uderzenia = <strong>10 miliardów bomb atomowych</strong>.' },
+  { emoji: '🌍', text: 'Ziemia jest bombardowana <strong>codziennie</strong> — ~100 ton kosmicznego pyłu i małych meteorytów spada na nas każdego dnia. Większość spala się w atmosferze.' },
+  { emoji: '🔭', text: 'NASA kataloguje <strong>ponad 34 000</strong> asteroid bliskich Ziemi (NEO). Około 2 400 z nich jest klasyfikowanych jako „potencjalnie niebezpieczne".' },
+  { emoji: '🛡️', text: 'Misja <strong>DART</strong> (2022) udowodniła, że potrafimy zmienić orbitę asteroidy. Uderzenie w Dimorphos zmieniło jego orbitę o 33 minuty.' },
+  { emoji: '☄️', text: '<strong>1 odległość księżycowa (LD)</strong> = 384 400 km. Astronomowie mówią „blisko" gdy asteroida mija nas w odległości < 20 LD. Perspektywa kosmiczna jest inna niż ludzka.' },
+  { emoji: '💎', text: 'Asteroida <strong>16 Psyche</strong> (śr. 226 km) jest zbudowana głównie z żelaza i niklu. Szacowana wartość minerałów: <strong>10 000 biliardów dolarów</strong>.' },
+  { emoji: '🦕', text: 'Dinozaury żyły na Ziemi <strong>165 milionów lat</strong>. Ludzie — około 300 000. Dinozaury miały lepszy track record przetrwania (dopóki nie przyleciał kamień).' },
+  { emoji: '🌠', text: 'Meteoryt <strong>czelabiński</strong> (2013, Rosja) miał tylko ~20m i eksplodował w atmosferze z energią 30× bomby z Hiroszimy. Rannych: 1 500 osób, głównie od wybitych szyb.' },
+] : [
+  { emoji: '🦖', text: 'The asteroid that killed the dinosaurs (<strong>Chicxulub</strong>) was ~10 km wide and hit at 20 km/s. Impact energy = <strong>10 billion atomic bombs</strong>.' },
+  { emoji: '🌍', text: 'Earth is bombarded <strong>daily</strong> — about 100 tons of cosmic dust and small meteorites fall on us every day. Most burn up in the atmosphere.' },
+  { emoji: '🔭', text: 'NASA catalogs <strong>over 34,000</strong> near-Earth objects (NEOs). About 2,400 are classified as "potentially hazardous".' },
+  { emoji: '🛡️', text: 'The <strong>DART</strong> mission (2022) proved we can deflect an asteroid. The impact changed Dimorphos\'s orbit by 33 minutes.' },
+  { emoji: '☄️', text: '<strong>1 lunar distance (LD)</strong> = 384,400 km. Astronomers say "close" when an asteroid passes within 20 LD. Cosmic perspective is different from human perspective.' },
+  { emoji: '💎', text: 'Asteroid <strong>16 Psyche</strong> (226 km wide) is made mostly of iron and nickel. Estimated mineral value: <strong>$10 quintillion</strong>.' },
+  { emoji: '🦕', text: 'Dinosaurs lived on Earth for <strong>165 million years</strong>. Humans — about 300,000. Dinosaurs had a better survival track record (until the rock came).' },
+  { emoji: '🌠', text: 'The <strong>Chelyabinsk</strong> meteor (2013, Russia) was only ~20m and exploded with 30× Hiroshima energy. Injured: 1,500 people, mostly from shattered windows.' },
+];
+
+// ── STATE ──
+let asteroids = [];
+let nextFlyby = null;
+let countdownInterval = null;
+
+// ── INIT ──
+async function init() {
+  document.title = T.pageTitle;
+  document.getElementById('loading-text').textContent = T.loading;
+  document.querySelector('.hero h1').innerHTML = T.title.replace(T.titleEm, `<em>${T.titleEm}</em>`);
+  document.querySelector('.hero-sub').textContent = T.sub;
+  document.getElementById('cd-label').textContent = T.nextPass;
+  document.getElementById('list-title').textContent = T.listTitle;
+
+  try {
+    await fetchAsteroids();
+    renderAll();
+  } catch (e) {
+    document.getElementById('alert-bar').innerHTML = `${T.errorTitle}<div class="alert-sub">${T.errorSub}</div>`;
+    console.error('NEO API error:', e);
+  }
+
+  document.getElementById('loading').classList.add('hidden');
+  startCountdown();
+  rotateDinoComment();
+  rotateFunFact();
+}
+
+// ── NASA NEO API ──
+async function fetchAsteroids() {
+  const today = new Date();
+  const end = new Date(today);
+  end.setDate(end.getDate() + 7);
+
+  const fmt = d => d.toISOString().split('T')[0];
+  const url = `https://api.nasa.gov/neo/rest/v1/feed?start_date=${fmt(today)}&end_date=${fmt(end)}&api_key=DEMO_KEY`;
+
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const data = await resp.json();
+
+  asteroids = [];
+  for (const [date, list] of Object.entries(data.near_earth_objects)) {
+    for (const neo of list) {
+      const ca = neo.close_approach_data[0];
+      if (!ca) continue;
+      asteroids.push({
+        id: neo.id,
+        name: neo.name.replace(/[()]/g, '').trim(),
+        date: ca.close_approach_date_full || ca.close_approach_date,
+        dateObj: new Date(ca.close_approach_date_full ? ca.close_approach_date_full.replace(/(\d+)-(\w+)-(\d+)/, '$3-$2-$1') : ca.close_approach_date),
+        epochMs: ca.epoch_date_close_approach,
+        distKm: parseFloat(ca.miss_distance.kilometers),
+        distLD: parseFloat(ca.miss_distance.lunar),
+        speedKmh: parseFloat(ca.relative_velocity.kilometers_per_hour),
+        speedKms: parseFloat(ca.relative_velocity.kilometers_per_second),
+        diamMinM: neo.estimated_diameter.meters.estimated_diameter_min,
+        diamMaxM: neo.estimated_diameter.meters.estimated_diameter_max,
+        hazardous: neo.is_potentially_hazardous_asteroid,
+      });
+    }
+  }
+
+  // Fix dateObj using epoch if available
+  for (const a of asteroids) {
+    if (a.epochMs) a.dateObj = new Date(a.epochMs);
+  }
+
+  asteroids.sort((a, b) => a.dateObj - b.dateObj);
+  document.getElementById('status-text').textContent =
+    `${asteroids.length} ${isPl ? 'asteroid' : 'asteroids'} · NASA NEO API · ${isPl ? 'aktualizacja co godzinę' : 'updated hourly'}`;
+}
+
+// ── RENDER ──
+function renderAll() {
+  renderAlert();
+  renderCountdownInit();
+  renderList();
+  showFunFact();
+}
+
+function renderAlert() {
+  const bar = document.getElementById('alert-bar');
+  const hasHazardous = asteroids.some(a => a.hazardous);
+  const closest = asteroids.length > 0 ? asteroids.reduce((a, b) => a.distKm < b.distKm ? a : b) : null;
+
+  if (hasHazardous) {
+    bar.classList.add('warn');
+    bar.classList.remove('danger');
+    bar.innerHTML = `${T.warnTitle}<div class="alert-sub">${T.warnSub}</div>`;
+  } else {
+    bar.classList.remove('danger', 'warn');
+    bar.innerHTML = `${T.safe}<div class="alert-sub">${T.safeSub}</div>`;
+  }
+}
+
+function formatDistKm(km) {
+  if (km >= 1e6) return `${(km/1e6).toFixed(1)} mln km`;
+  return `${Math.round(km/1000).toLocaleString()} tys. km`;
+}
+
+function renderCountdownInit() {
+  const now = Date.now();
+  const upcoming = asteroids.filter(a => a.dateObj.getTime() > now);
+  nextFlyby = upcoming.length > 0 ? upcoming[0] : (asteroids.length > 0 ? asteroids[0] : null);
+
+  if (!nextFlyby) return;
+
+  document.getElementById('cd-name').textContent = nextFlyby.name;
+  const [sizeText, sizeEmoji] = sizeCompare(nextFlyby.diamMinM, nextFlyby.diamMaxM);
+
+  document.getElementById('cd-stats').innerHTML = `
+    <div class="cd-stat dist">
+      <div class="cd-stat-value">${distLabelShort(nextFlyby.distLD)}</div>
+      <div class="cd-stat-label">${distLabelUnit(nextFlyby.distLD)}</div>
+      <div class="cd-stat-label">${formatDistKm(nextFlyby.distKm)}</div>
+    </div>
+    <div class="cd-stat speed">
+      <div class="cd-stat-value">${Math.round(nextFlyby.speedKms)} km/s</div>
+      <div class="cd-stat-label">${isPl ? 'prędkość lotu' : 'speed'}</div>
+    </div>
+    <div class="cd-stat size">
+      <div class="cd-stat-value">${sizeText}</div>
+      <div class="cd-stat-label">${isPl ? 'wielkość' : 'size'}</div>
+    </div>
+  `;
+}
+
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    if (!nextFlyby) return;
+    const diff = nextFlyby.dateObj.getTime() - Date.now();
+    const el = document.getElementById('cd-time');
+
+    if (diff <= 0) {
+      el.textContent = isPl ? 'WŁAŚNIE TERAZ!' : 'RIGHT NOW!';
+      el.style.color = 'var(--accent)';
+      return;
+    }
+
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+
+    let str = '';
+    if (d > 0) str += `${d}${T.days} `;
+    str += `${h}${T.hours} ${String(m).padStart(2,'0')}${T.min} ${String(s).padStart(2,'0')}${T.sec}`;
+    el.textContent = str;
+  }, 1000);
+}
+
+function renderList() {
+  const loc = isPl ? 'pl-PL' : 'en-GB';
+  const list = document.getElementById('asteroid-list');
+
+  list.innerHTML = asteroids.map((a, i) => {
+    const [sizeText, sizeEmoji] = sizeCompare(a.diamMinM, a.diamMaxM);
+    const dateStr = a.dateObj.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
+    const timeStr = a.dateObj.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
+    const hazTag = a.hazardous ? `<span class="hazard-tag">⚠️ ${T.hazardous}</span>` : '';
+
+    const threat = a.hazardous ? 'threat-danger' : a.distLD < 10 ? 'threat-medium' : 'threat-safe';
+    return `<div class="asteroid-card ${threat}" style="animation-delay: ${i * 0.05}s">
+      <div class="asteroid-header">
+        <div class="asteroid-icon">${sizeEmoji}</div>
+        <div>
+          <h3>${a.name}</h3>
+          <div class="date">${dateStr} ${timeStr}</div>
+        </div>
+        ${hazTag}
+      </div>
+      <div class="asteroid-stats-row">
+        <div class="stat-cell s-dist">
+          <div class="stat-label">${isPl ? 'Odległość' : 'Distance'}</div>
+          <div class="stat-value">${distLabelShort(a.distLD)}</div>
+          <div class="stat-sub">${distLabelUnit(a.distLD)}</div>
+          <div class="stat-sub">${formatDistKm(a.distKm)}</div>
+        </div>
+        <div class="stat-cell s-speed">
+          <div class="stat-label">${isPl ? 'Prędkość' : 'Speed'}</div>
+          <div class="stat-value">${Math.round(a.speedKms)} km/s</div>
+          <div class="stat-sub">${Math.round(a.speedKmh).toLocaleString()} km/h</div>
+        </div>
+        <div class="stat-cell s-size">
+          <div class="stat-label">${isPl ? 'Wielkość' : 'Size'}</div>
+          <div class="stat-value">${sizeText}</div>
+          <div class="stat-sub">${Math.round(a.diamMinM)}–${Math.round(a.diamMaxM)} m</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ROTATING COMMENTS (shuffle — no repeats until all shown) ──
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+let dinoQueue = [];
+function nextDinoComment() {
+  const hasHazardous = asteroids.some(a => a.hazardous);
+  const pool = hasHazardous ? DINO_COMMENTS_CLOSE : DINO_COMMENTS_SAFE;
+  if (dinoQueue.length === 0) dinoQueue = shuffle(pool);
+  return dinoQueue.pop();
+}
+
+function rotateDinoComment() {
+  const el = document.getElementById('dino-comment');
+  el.style.transition = 'opacity 0.4s';
+
+  setInterval(() => {
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.textContent = nextDinoComment();
+      el.style.opacity = '1';
+    }, 400);
+  }, 8000);
+}
+
+function showFunFact() {
+  const el = document.getElementById('funfact');
+  const fact = FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)];
+  el.innerHTML = `<div class="dino-emoji">${fact.emoji}</div><p>${fact.text}</p>`;
+}
+
+function rotateFunFact() {
+  setInterval(() => {
+    const el = document.getElementById('funfact');
+    el.style.opacity = '0.3';
+    setTimeout(() => {
+      const fact = FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)];
+      el.innerHTML = `<div class="dino-emoji">${fact.emoji}</div><p>${fact.text}</p>`;
+      el.style.opacity = '1';
+    }, 400);
+  }, 15000);
+  document.getElementById('funfact').style.transition = 'opacity 0.4s';
+}
+
+// ── START ──
+init();
+</script>
+</body>
+</html>
