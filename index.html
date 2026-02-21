@@ -906,7 +906,7 @@ async function fetchAsteroids() {
   end.setDate(end.getDate() + 7);
 
   const fmt = d => d.toISOString().split('T')[0];
-  const url = `https://api.nasa.gov/neo/rest/v1/feed?start_date=${fmt(today)}&end_date=${fmt(end)}&api_key=DEMO_KEY`;
+  const url = `https://api.nasa.gov/neo/rest/v1/feed?start_date=${fmt(today)}&end_date=${fmt(end)}&api_key=I80ngBb6x2VRd0aYyugCQg6ZYzY9Cc4cKUDAziqq`;
 
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
